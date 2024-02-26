@@ -2,6 +2,7 @@ package main
 
 import (
 	"clnotifications/clnotifications"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,12 +13,17 @@ import (
 )
 
 func init() {
-	logfilename := filepath.Join(os.Getenv("temp"), "clnotifications.log")
+	exePath, err := os.Executable()
+	if err != nil {
+		exePath = os.Getenv("temp")
+	}
+	logfilename := filepath.Join(filepath.Dir(exePath), "clnotifications.log")
 	rotateFileHook, err := rotatefilehook.NewRotateFileHook(rotatefilehook.RotateFileConfig{
 		Filename:   logfilename,
-		MaxSize:    5, // megabytes
-		MaxBackups: 5, // number of old log files to retain
-		MaxAge:     1, // days
+		MaxSize:    10, // megabytes
+		MaxBackups: 1,  // number of old log files to retain
+		MaxAge:     14, // days
+		Level:      log.InfoLevel,
 		Formatter: &log.TextFormatter{
 			TimestampFormat: time.RFC822,
 		},
@@ -39,10 +45,22 @@ func main() {
 	log := log.WithFields(log.Fields{"event": "main"})
 	fmt.Println("clnotifications v0.1.1")
 
-	//err := clnotifications.GetKeys()
-	err := clnotifications.ClearValues()
-	if err != nil {
-		fmt.Printf("Error during GetKeys: %v", err)
+	flag_cleanup := flag.Bool("cleanup", true, "command to start cleaning up")
+	flag.Parse()
+
+	if !*flag_cleanup {
+		err := clnotifications.GetKeys(log)
+		if err != nil {
+			fmt.Printf("Error during GetKeys: %v", err)
+			log.Fatalf("Error during GetKeys: %v", err)
+		}
+	} else {
+		log.Info("Startting cleanup process...")
+		err := clnotifications.ClearValues(log)
+		if err != nil {
+			fmt.Printf("Error during ClearValues: %v", err)
+			log.Fatalf("Error during ClearValues: %v", err)
+		}
 	}
 
 }
