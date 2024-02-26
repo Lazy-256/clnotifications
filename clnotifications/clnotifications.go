@@ -5,6 +5,7 @@ import (
 	"io"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -14,46 +15,37 @@ const (
 	COUNT_IN_CHUNKS = 100
 )
 
-func GetKeys() error {
+func GetKeys(log *log.Entry) error {
 	subRegKey, err := registry.OpenKey(registry.LOCAL_MACHINE,
 		"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Notifications", registry.READ)
-	// registry.ALL_ACCESS
 	if err != nil {
-		fmt.Printf("Notifications key can't be opened: %v", err)
+		log.Fatalf("Notifications key can't be opened: %v", err)
 		return err
 	}
 
 	keyInfo, err := subRegKey.Stat()
 	if err != nil {
-		fmt.Printf("Notifications key's properties can't be readd: %v", err)
+		log.Fatalf("Notifications key's properties can't be readd: %v", err)
 		return err
 	}
 
 	fmt.Printf("Notifications key count: %d", keyInfo.ValueCount)
-	fmt.Printf("Notifications key last write time: %q", keyInfo.ModTime())
-
-	keys, err := subRegKey.ReadValueNames(-1)
-	if err != nil {
-		fmt.Printf("Notifications keys can't be readd: %v", err)
-		return err
-	}
-	fmt.Printf("Notifications keys: %q", keys)
-
+	log.Infof("Notifications key count: %d", keyInfo.ValueCount)
 	return nil
 }
 
-func ClearValues() error {
+func ClearValues(log *log.Entry) error {
 	regKey, err := registry.OpenKey(registry.LOCAL_MACHINE,
 		"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Notifications", registry.ALL_ACCESS)
 	if err != nil {
-		fmt.Printf("Notifications key can't be opened: %v\n", err)
+		log.Fatalf("Notifications key can't be opened: %v\n", err)
 		return err
 	}
 	defer regKey.Close()
 
 	keyInfo, err := regKey.Stat()
 	if err != nil {
-		fmt.Printf("Notifications key's properties can't be readd: %v\n", err)
+		log.Fatalf("Notifications key's properties can't be readd: %v\n", err)
 		return err
 	}
 
@@ -67,7 +59,7 @@ func ClearValues() error {
 		// Read first count_read_keys values
 		values, err := regKey.ReadValueNames(count_read_keys)
 		if err != nil && err != io.EOF {
-			fmt.Printf("Notifications keys can't be readd: %v\n", err)
+			log.Fatalf("Notifications keys can't be readd: %v\n", err)
 			return err
 		}
 		if err == io.EOF {
@@ -80,6 +72,7 @@ func ClearValues() error {
 			}
 		}
 		fmt.Printf("%d values of %d have been read\n", len(values), keyInfo.ValueCount)
+		log.Infof("%d values of %d have been read\n", len(values), keyInfo.ValueCount)
 
 		// Skip COUNT_SKIP_KEYS and delete the rest in portions of COUNT_IN_CHUNKS
 		values_to_delete := values[COUNT_SKIP_KEYS:len(values)]
@@ -101,6 +94,7 @@ func ClearValues() error {
 				wg.Done()
 				fmt.Printf("%d values of %d\n", val_handled_count, val_total_count)
 			}(regKey, chunk, deleted_values_count, keyInfo.ValueCount)
+			log.Infof("%d values of %d\n", deleted_values_count, keyInfo.ValueCount)
 		}
 	}
 
@@ -113,7 +107,7 @@ func delValues(key registry.Key, values []string) error {
 		err := key.DeleteValue(val)
 		//_, _, err := key.GetBinaryValue(val)
 		if err != nil {
-			fmt.Printf("Notifications value can't be deleted: %v\n", err)
+			log.Fatalf("Notifications value can't be deleted: %v\n", err)
 			return err
 		}
 		fmt.Printf("%s value have been deleted\n", val)
