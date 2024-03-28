@@ -10,6 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/snowzach/rotatefilehook"
+	"golang.org/x/sys/windows/svc/eventlog"
 )
 
 func init() {
@@ -42,7 +43,16 @@ func init() {
 }
 
 func main() {
-	log := log.WithFields(log.Fields{"event": "main"})
+	log := log.New().WithField(log.Fields{"event": "main"})
+	//log := log.WithFields(log.Fields{"event": "main"})
+
+	elog, err = eventlog.Open("Service Name")
+	if err != nil {
+		panic(err)
+	}
+	defer elog.Close()
+	log.Hooks.Add(eventloghook.NewHook(elog))
+
 	fmt.Println("clnotifications v0.1.1")
 
 	flag_cleanup := flag.Bool("cleanup", true, "command to start cleaning up")
