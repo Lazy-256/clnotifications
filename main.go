@@ -55,7 +55,7 @@ func main() {
 			log.Fatalf("Error during GetKeys: %v", err)
 		}
 	} else {
-		log.Info("Startting cleanup process...")
+		log.Debugf("Startting cleanup process...")
 		err := clnotifications.ClearValues(log)
 		if err != nil {
 			fmt.Printf("Error during ClearValues: %v", err)

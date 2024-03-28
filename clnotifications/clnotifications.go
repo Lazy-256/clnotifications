@@ -123,7 +123,7 @@ func delValues(key registry.Key, values []string) error {
 		err := key.DeleteValue(val)
 		//_, _, err := key.GetBinaryValue(val)
 		if err != nil {
-			log.Errorf("Notifications value can't be deleted: %v", err)
+			log.Debugf("Notifications value can't be deleted: %v", err)
 			return nil //err
 		}
 		// fmt.Printf("%s value have been deleted", val)
