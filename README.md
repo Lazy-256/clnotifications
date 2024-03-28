@@ -1,4 +1,4 @@
-## clnotifications 
+## clnotifications
 
 The clnotifications tool cleans up thousands of Windows Push Notification Platform
  (WPN) and Windows Notification Facility (WNF) values from `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Notifications` registry key. To prevent high CPU usage and slow user logons.

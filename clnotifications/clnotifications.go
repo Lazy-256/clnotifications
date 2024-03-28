@@ -43,9 +43,9 @@ func GetKeys(log *log.Entry) error {
 }
 
 func ClearValues(log *log.Entry) error {
-	log.Infof("number of values to read in one iteration: %d", COUNT_READ_KEYS)
-	log.Infof("number of values to skip deletion: %d", COUNT_SKIP_KEYS)
-	log.Infof("number of values to delete in one chunk: %d", COUNT_IN_CHUNKS)
+	log.Debugf("number of values to read in one iteration: %d", COUNT_READ_KEYS)
+	log.Debugf("number of values to skip deletion: %d", COUNT_SKIP_KEYS)
+	log.Debugf("number of values to delete in one chunk: %d", COUNT_IN_CHUNKS)
 
 	regKey, err := registry.OpenKey(registry.LOCAL_MACHINE,
 		"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Notifications", registry.ALL_ACCESS)
@@ -60,7 +60,7 @@ func ClearValues(log *log.Entry) error {
 		log.Fatalf("Notifications key's properties can't be readd: %v", err)
 		return err
 	}
-	log.Infof("number of values: %d", keyInfo.ValueCount)
+	log.Infof("number of values before cleaning: %d", keyInfo.ValueCount)
 
 	// Skip them from deletion
 	// Keep reading in portion of 300 keys => send to pipeline to goroutine to delete
@@ -104,10 +104,17 @@ func ClearValues(log *log.Entry) error {
 				go delValues(key, values)
 				wg.Done()
 			}(regKey, chunk)
-			log.Infof("%d values of %d handled", deleted_values_count, keyInfo.ValueCount)
+			log.Debugf("%d values of %d handled", deleted_values_count, keyInfo.ValueCount)
 		}
 	}
 	wg.Wait()
+
+	keyInfo, err = regKey.Stat()
+	if err != nil {
+		log.Fatalf("Notifications key's properties can't be readd: %v", err)
+		return err
+	}
+	log.Infof("number of values after cleaning: %d", keyInfo.ValueCount)
 	return err
 }
 
